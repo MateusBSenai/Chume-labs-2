@@ -1,102 +1,53 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+  // Metadados do documento
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chume Labs 2</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-  <style>
-    body { margin:0; font-family: 'Roboto', sans-serif; background-color: #f0f0f0; }
-    header { background: #1c1c1c; color: #fff; padding: 60px 20px; text-align:center; }
-    header h1 { font-size: 3em; margin: 0; }
-    header p { font-size: 1.2em; margin: 10px 0 30px; }
-    header a.button { background: #01dc22; color: #fff; padding: 15px 30px; text-decoration:none; font-weight:bold; border-radius:5px; }
-    nav { background:#333; display:flex; justify-content:center; padding:10px 0; }
-    nav a { color:#fff; margin:0 20px; text-decoration:none; font-weight:bold; }
-    section { padding: 60px 20px; text-align:center; }
-    section h2 { font-size:2em; margin-bottom:20px; }
-    section p { max-width:600px; margin:0 auto 40px; }
-    .cards { display:flex; justify-content:center; flex-wrap:wrap; gap:20px; }
-    .card { background:#fff; padding:20px; border-radius:10px; width:250px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-    .card img { width:100%; border-radius:10px; margin-bottom:15px; }
-    .cta { background:#0312b1; color:#fff; padding:60px 20px; border-radius:10px; font-size:1.5em; text-decoration:none; display:inline-block; margin-top:20px; }
-    footer { background:#1c1c1c; color:#fff; text-align:center; padding:40px 20px; }
-  </style>
+  <link rel='stylesheet' type="text/css" href="./css/main.css">
+  <title>Nitro Race</title>
 </head>
-<body>
-
-  <!-- Header -->
-  <header>
-    <h1>Chume Labs 2</h1>
-    <p>Explorando os mistérios do laboratório com Mike e Pac!</p>
-    <a href="https://www.youtube.com/playlist?list=PLGdUqo5xI_jqQkeQn-jMOojk7AYqXSFA1" class="button" target="_blank">Assistir Agora</a>
-  </header>
-
-  <!-- Navegação -->
-  <nav>
-    <a href="#sobre">Sobre</a>
-    <a href="#personagens">Personagens</a>
-    <a href="#assistir">Assistir</a>
-    <a href="#ficha">Ficha Técnica</a>
-  </nav>
-
-  <!-- Sobre -->
-  <section id="sobre">
-    <h2>Sobre</h2>
-    <p>Chume Labs 2 é uma série onde os cientistas Mike e Pac exploram um laboratório cheio de invenções malucas, desafios e experiências surpreendentes. Descubra como eles interagem com as criações e os mistérios que surgem!</p>
-  </section>
-
-  <!-- Personagens -->
-  <section id="personagens">
-    <h2>Personagens</h2>
-    <div class="cards">
-      <div class="card">
-        <img src="images/img1.png" alt="Mike">
-        <h3>Mike</h3>
-        <p>O cientista inteligente e aventureiro, sempre buscando novas experiências e soluções criativas dentro do laboratório.</p>
+// Corpo do jogo
+<body translate="no">
+  <div class="container">
+    <ul id="info">
+      <button id="pauseBtn" class="interfaceBtn pause hidden" name="p"></button>
+      <li id="fps"></li>
+      <button id="fullScreenBtn" class="interfaceBtn" name="fullscreenbtn">
+        <img class="img100" src="images/sprites/other/fullscreen.png">
+      </button>
+      <span id="mute" class="mute hidden"></span>
+      <!-- <li id="line1"></li>
+      <li id="line2"></li>
+      <li id="line3"></li>
+      <li id="line4"></li>
+      <li id="line5"></li>
+      <li id="line6"></li> -->
+    </ul>
+// Controles de toque para dispositivos móveis
+    <div id="touchControls">
+      <div class="leftControls">
+        <button class="controlButtons" type="button" name="arrowup">U</button>
+        <button class="controlButtons" type="button" name="arrowdown">D</button>
       </div>
-      <div class="card">
-        <img src="images/img2.png" alt="Pac">
-        <h3>Pac</h3>
-        <p>O parceiro divertido e curioso de Mike, sempre pronto para experimentar invenções e enfrentar desafios inesperados.</p>
-      </div>
-      <div class="card">
-        <img src="images/img3.png" alt="Laboratório">
-        <h3>Laboratório</h3>
-        <p>Um espaço repleto de equipamentos, experimentos e invenções que tornam cada episódio uma aventura única e emocionante.</p>
+      <div class="rightControls">
+        <button class="controlButtons" type="button" name="enter">OK</button>
+        <button class="controlButtons" type="button" name="arrowleft">L</button>
+        <button class="controlButtons" type="button" name="arrowright">R</button>
       </div>
     </div>
-  </section>
+    
+    <canvas id="gameCanvas" width="640" height="360"></canvas>
+  </div>
+// Música de fundo do jogo
 
-  <!-- Call to Action / Assistir -->
-  <section id="assistir">
-    <h2>Assista Agora!</h2>
-    <a href="https://www.youtube.com/playlist?list=PLGdUqo5xI_jqQkeQn-jMOojk7AYqXSFA1" class="cta" target="_blank">Clique aqui e assista à série completa</a>
-  </section>
+  <audio id='music'>
+    <source src="music/topgear-title.mp3">
+  </audio>
 
-  <!-- Ficha Técnica -->
-  <section id="ficha">
-    <h2>Ficha Técnica</h2>
-    <div class="cards">
-      <div class="card">
-        <h3>Canal</h3>
-        <p>TazerCraft</p>
-      </div>
-      <div class="card">
-        <h3>Plataforma</h3>
-        <p>YouTube</p>
-      </div>
-      <div class="card">
-        <h3>Gênero</h3>
-        <p>Entretenimento / Série</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    &copy; 2025 Chume Labs 2 | Todos os direitos reservados
-  </footer>
+  <script src="./js/stats.js"></script>
+  <script type="module" src="./js/main.js"></script>
 
 </body>
+
 </html>

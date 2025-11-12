@@ -1,0 +1,204 @@
+import {
+  handleInput, tracks, startPosition, drivers, resource,
+} from './util.js';
+import Opponent from './opponent.js';
+import Sprite from './sprite.js';
+// importa a pista de corrida de ,./road.js
+class Menu { // classe para gerenciar o menu do jogo
+  constructor(width, height, animations) {
+    this.showMenu = 0;
+    this.height = height;
+    this.state = 'title';
+    this.width = width;
+    this.menuY = 0;
+    this.menuX = 4;
+    this.updateTime = 6 / 60;
+    this.updateAnimationsTime = 1 / 60;
+    this.menuPhrase = {
+      0: 'Circuito: ',
+      1: 'Oponentes: ',
+      2: 'Música: ',
+      3: 'Volume da música: ',
+      4: 'Iniciar ',
+    }; // frases do menu
+    this.menu = {
+      0: Object.keys(tracks),
+      1: ['1', '3', '5', '7', '9', '11', '13', '15', '17', '19'],
+      2: ['não', 'sim'],
+      3: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+      4: ['corrida'],
+    }; // opções do menu
+    this.selectedOptions = {
+      0: 'brasil',
+      1: '5',
+      2: 'sim',
+      3: '3',
+      4: 'corrida',
+    };
+    this.arrowUpBlink = 0;
+    this.arrowDownBlink = 0;
+    this.menuTitle = { pos: 0, direction: 1 };
+    this.animations = animations;
+  }
+// inicia a corrida com as opções selecionadas no menu
+  startRace(player, road, opponents, director) {
+    const roadParam = road;
+    const zero = 0;
+    drivers.forEach((driver) => opponents.push(new Opponent(
+      driver.power, startPosition(tracks[this.selectedOptions[zero]].trackSize, driver.position),
+      driver.trackSide, 'opponents', driver.name, driver.carColor,
+    )));
+// cria os oponentes com base nas opções selecionadas
+    opponents.forEach((opponentNumber) => opponentNumber.create());
+    opponents.splice(this.selectedOptions[1], opponents.length);
+    roadParam.trackName = this.selectedOptions[zero];
+    roadParam.create();
+    player.create(this, tracks[this.selectedOptions[zero]].trackSize);
+    director.create(road, this.selectedOptions[0]);
+  }
+// atualiza o estado do menu com base na entrada do usuário
+  update(player, road, opponents, director) {
+    const {
+      arrowup, arrowdown, arrowleft, arrowright,
+    } = handleInput.map;
+    const maxX = Object.keys(this.menu).length - 1;
+    const maxY = this.menu[this.menuX].length - 1;
+    if (handleInput.mapPress.enter && !this.showMenu) {
+    this.selectedOptions[2] = 'sim'; // Mantém a música ativada
+    this.startRace(player, road, opponents, director); // inicia a corrida direto
+    this.state = 'race'; // muda o estado do jogo
+    handleInput.mapPress.enter = false; // evita múltiplos disparos
+}
+
+// navega pelo menu com base na entrada do usuário
+    if (this.showMenu) {
+      if (!arrowdown) this.arrowDownBlink = false;
+      if (!arrowup) this.arrowUpBlink = false;
+
+      if (this.menuX < maxX && arrowdown) {
+        this.arrowDownBlink = !this.arrowDownBlink;
+        this.menuX += 1;
+        this.menuY = this.menu[this.menuX]
+          .findIndex((item) => item === this.selectedOptions[this.menuX]);
+      } else if (this.menuX === maxX && arrowdown) {
+        this.arrowDownBlink = 1;
+        this.menuX = 0;
+        this.menuY = this.menu[this.menuX]
+          .findIndex((item) => item === this.selectedOptions[this.menuX]);
+      }
+// navega para cima no menu
+      if (this.menuX > 0 && arrowup) {
+        this.arrowUpBlink = 1;
+        this.menuX -= 1;
+        this.menuY = this.menu[this.menuX]
+          .findIndex((item) => item === this.selectedOptions[this.menuX]);
+      } else if (this.menuX === 0 && arrowup) {
+        this.arrowUpBlink = 1;
+        this.menuX = maxX;
+        this.menuY = this.menu[this.menuX]
+          .findIndex((item) => item === this.selectedOptions[this.menuX]);
+      }
+// navega para a direita no menu
+      if (this.menuY < maxY && arrowright) this.menuY += 1;
+      else if (this.menuY === maxY && arrowright) this.menuY = 0;
+// navega para a esquerda no menu
+      if (this.menuY > 0 && arrowleft) this.menuY -= 1;
+      else if (this.menuY === 0 && arrowleft) this.menuY = maxY;
+// confirma a seleção no menu
+      const lastMenuOption = Object.keys(this.menu).length - 1;
+// inicia a corrida se a última opção for selecionada
+      if (this.menuX !== lastMenuOption) {
+        this.selectedOptions[this.menuX] = this.menu[this.menuX][this.menuY];
+        handleInput.mapPress.enter = false;
+      }
+// inicia a corrida se a última opção for selecionada
+      if (handleInput.mapPress.enter && this.menuX === lastMenuOption) {
+        const pauseBtn = document.querySelector('#pauseBtn');
+        const fps = document.querySelector('#fps');
+        const mute = document.querySelector('#mute');
+        pauseBtn.classList.toggle('hidden');
+        mute.classList.toggle('hidden');
+        const okBtn = document.querySelector('.rightControls').firstElementChild;
+        okBtn.classList.toggle('hidden');
+        this.startRace(player, road, opponents, director);
+        this.state = 'race';
+        handleInput.mapPress.enter = false;
+        fps.firstElementChild.classList.remove('hidden');
+      }
+    }
+  }
+// desenha os botões do menu na tela
+  static drawButtons(render, x, y, size, text) {
+    render.drawCircle(x, y + 3, size, 0, Math.PI * 2);
+    render.drawText('black', text, x, y, 1.3, 'OutriderCond', 'center');
+  }
+// renderiza o menu na tela
+  render(render) {
+    this.animations.forEach((item) => item.render(render));
+    render.drawText('#8400c2ff', 'Nitro Race', 320, 30, 4, 'OutriderCondBold');
+// animação do título do menu
+    if (!this.showMenu) {
+      if (this.menuTitle.pos >= 12) this.menuTitle.direction = -1;
+      if (this.menuTitle.pos <= -12) this.menuTitle.direction = 1;
+      this.menuTitle.pos += (this.menuTitle.direction / 2);
+      if (window.navigator.maxTouchPoints) {
+        render.drawText('black', 'Aperte OK para iniciar', 320, 180 + this.menuTitle.pos);
+      } else {
+        render.drawText('black', 'Aperte ENTER para iniciar', 320, 180 + this.menuTitle.pos);
+      }
+    }
+// exibe o menu principal
+    if (this.showMenu) {
+      if (this.menuTitle.pos >= 4) this.menuTitle.direction = -1;
+      if (this.menuTitle.pos <= -4) this.menuTitle.direction = 1;
+      this.menuTitle.pos += (this.menuTitle.direction / 2);
+      const maxX = Object.keys(this.menu).length - 1;
+      const menuLow = this.menuX - 1 >= 0 ? this.menuX - 1 : maxX;
+      const menuHigh = this.menuX + 1 <= maxX ? this.menuX + 1 : 0;
+      const lowText = `${this.menuPhrase[menuLow]} ${this.selectedOptions[menuLow].toLocaleUpperCase()}`;
+      const highText = `${this.menuPhrase[menuHigh]} ${this.selectedOptions[menuHigh].toLocaleUpperCase()}`;
+// desenha o fundo do menu e o texto
+      render.roundRect('#2C69EB', 100, 100, 440, 170, 20, true, false);
+      render.drawText('#FFFAF4', lowText, 320, 180 - 45, 1.6);
+      const phrase = `${this.menuPhrase[this.menuX]} ${this.menu[this.menuX][this.menuY].toLocaleUpperCase()}`;
+      render.drawText('#050B1A', phrase, 320, 180 + (this.menuTitle.pos / 4), 1.6);
+      render.drawText('#FFFAF4', highText, 320, 180 + 45, 1.6);
+// desenha as instruções de controle
+      if (window.navigator.maxTouchPoints) {
+        Menu.drawButtons(render, 145, 310, 15, 'U');
+        Menu.drawButtons(render, 185, 310, 15, 'D');
+        Menu.drawButtons(render, 225, 310, 15, 'L');
+        Menu.drawButtons(render, 265, 310, 15, 'R');
+        render.drawText('black', 'Navegar', 150, 345, 1.3, 'OutriderCond', 'left');
+        Menu.drawButtons(render, 418, 310, 18, 'OK');
+        render.drawText('black', 'Confirmar', 490, 345, 1.3, 'OutriderCond', 'right');
+      } else {
+        const arrowKeys = new Sprite();
+        arrowKeys.image = resource.get('arrowKeys');
+        arrowKeys.name = 'mnArrowKeys';
+// desenha as teclas de seta e Enter
+        const enterKey = new Sprite();
+        enterKey.image = resource.get('enterKey');
+        enterKey.name = 'mnEnterKey';
+// desenha as teclas de seta e Enter
+        render.drawText('black', 'Navegar', 590, 320, 1.3, 'OutriderCond', 'right');
+        render.renderingContext.drawImage(arrowKeys.image, 595, 310, 28, 18);
+        render.drawText('black', 'Confirmar', 590, 345, 1.3, 'OutriderCond', 'right');
+        render.renderingContext.drawImage(enterKey.image, 597, 335, 23, 18);
+      }
+// indica a opção selecionada no menu
+      if (this.arrowUpBlink) {
+        render.drawText('#050B1A', 'c', 520, 140, 2, 'Arrows');
+      } else {
+        render.drawText('#FFFAF4', 'c', 520, 140, 2, 'Arrows');
+      }
+      if (this.arrowDownBlink) {
+        render.drawText('#050B1A', 'd', 520, 240, 2, 'Arrows');
+      } else {
+        render.drawText('#FFFAF4', 'd', 520, 240, 2, 'Arrows');
+      }
+    }
+  }
+}
+// exporta a classe Menu para uso em outros módulos
+export default Menu;

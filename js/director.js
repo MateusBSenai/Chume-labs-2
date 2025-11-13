@@ -181,3 +181,167 @@ class Director {
 }
 
 export default Director;
+
+// --- Tela de fim de corrida com PÓDIO e posição do jogador (identificação confiável) ---
+Director.prototype.checkRaceEnd = function(player) {
+  const totalLaps = tracks[this.trackName].laps;
+
+  // só termina quando COMPLETA todas as voltas (não antes)
+  if (this.lap > totalLaps && !this.ended) {
+    this.ended = true; // trava pra não chamar várias vezes
+
+    // pausa corretamente
+    this.running = false;
+    this.paused = true;
+
+    // cria a tela final
+    const endScreen = document.createElement('div');
+    endScreen.id = 'endScreen';
+    Object.assign(endScreen.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '100%',
+      height: '100%',
+      background: 'rgba(0, 0, 0, 0.9)',
+      color: '#fff',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'OutriderCond, sans-serif',
+      fontSize: '1.6rem',
+      textAlign: 'center',
+      zIndex: '9999',
+      opacity: '0',
+      transition: 'opacity 0.6s ease'
+    });
+
+    const title = document.createElement('h1');
+    title.textContent = '🏁 Corrida Finalizada!';
+    title.style.marginBottom = '20px';
+    endScreen.appendChild(title);
+
+    const info = document.createElement('div');
+    const bestLap = this.totalLaptimes.length
+      ? Math.min(...this.totalLaptimes)
+      : this.animTime;
+    const total = this.totalLaptimes.reduce((a, b) => a + b, 0);
+
+    info.innerHTML = `
+      <p><strong>Pista:</strong> ${this.trackName}</p>
+      <p><strong>Voltas Completadas:</strong> ${totalLaps}</p>
+      <p><strong>Melhor Volta:</strong> ${formatTime(bestLap)}</p>
+      <p><strong>Tempo Total:</strong> ${formatTime(total)}</p>
+    `;
+    info.style.marginBottom = '30px';
+    endScreen.appendChild(info);
+
+    // === Pódio ===
+    const podiumTitle = document.createElement('h2');
+    podiumTitle.textContent = '🏆 Pódio 🏆';
+    podiumTitle.style.marginBottom = '10px';
+    endScreen.appendChild(podiumTitle);
+
+    const podium = document.createElement('div');
+    Object.assign(podium.style, {
+      display: 'flex',
+      gap: '30px',
+      justifyContent: 'center',
+      alignItems: 'flex-end',
+      marginBottom: '20px'
+    });
+
+    // organiza as posições finais (menor position -> melhor)
+    const finalRanking = [...this.positions].sort((a, b) => a.position - b.position);
+    const colors = ['#FFD700', '#C0C0C0', '#CD7F32']; // ouro, prata, bronze
+
+    for (let i = 0; i < 3 && i < finalRanking.length; i++) {
+      const driver = finalRanking[i];
+      const block = document.createElement('div');
+      Object.assign(block.style, {
+        background: colors[i],
+        color: '#000',
+        width: '100px',
+        height: `${140 - i * 30}px`,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        borderRadius: '8px 8px 0 0',
+        paddingBottom: '10px',
+        fontWeight: 'bold',
+        boxShadow: '0 0 10px rgba(255,255,255,0.4)'
+      });
+
+      block.innerHTML = `
+        <span style="font-size:1.2rem;">${i + 1}º</span>
+        <span style="font-size:1rem;">${driver.name}</span>
+      `;
+      podium.appendChild(block);
+    }
+
+    endScreen.appendChild(podium);
+
+    // === Determinar posição do jogador de forma confiável ===
+    // usa player.name passado pelo loop para encontrar a entrada correta em this.positions
+    let playerName = (player && player.name) ? player.name : null;
+
+    // fallbacks:
+    // 1) se playerName não existir, tenta pegar o primeiro elemento de positions
+    if (!playerName) playerName = this.positions[0]?.name || 'Você';
+
+    // 2) procura no ranking final pelo nome exato (case-sensitive). Se não encontrar, tenta case-insensitive.
+    let playerRankIndex = finalRanking.findIndex(p => p.name === playerName);
+    if (playerRankIndex === -1) {
+      playerRankIndex = finalRanking.findIndex(p => p.name && p.name.toLowerCase() === String(playerName).toLowerCase());
+    }
+
+    // 3) se ainda não encontrou, tenta identificar por semelhança (último recurso)
+    if (playerRankIndex === -1) {
+      // como fallback, suponha que o jogador seja a entrada com o menor raceTime (ou a primeira do array)
+      playerRankIndex = finalRanking.findIndex(p => p.isPlayer) ; // se você tiver isPlayer algum dia
+      if (playerRankIndex === -1) playerRankIndex = finalRanking.findIndex(p => p.name && p.name.toLowerCase().includes('player'));
+      if (playerRankIndex === -1) playerRankIndex = 0; // evita -1: assume primeiro
+    }
+
+    const playerRank = playerRankIndex + 1; // 1-based
+
+    const playerResult = document.createElement('p');
+    playerResult.innerHTML = `🏎️ Você terminou em <strong>${playerRank}º lugar</strong>!`;
+    playerResult.style.marginTop = '10px';
+    playerResult.style.fontSize = '1.5rem';
+    // cor por posição (1->gold,2->silver,3->bronze, else white)
+    if (playerRank === 1) playerResult.style.color = '#FFD700';
+    else if (playerRank === 2) playerResult.style.color = '#C0C0C0';
+    else if (playerRank === 3) playerResult.style.color = '#CD7F32';
+    else playerResult.style.color = '#00ffcc';
+    playerResult.style.textShadow = '0 0 10px rgba(0,255,255,0.08)';
+    endScreen.appendChild(playerResult);
+
+    // OPTIONAL DEBUG: descomente para ver estrutura de positions e playerName no console
+    // console.log('FINAL RANKING:', finalRanking);
+    // console.log('playerName used to match:', playerName);
+    // console.log('playerRankIndex:', playerRankIndex);
+
+    // adiciona tudo na tela
+    document.body.appendChild(endScreen);
+
+    // transição suave de aparição
+    requestAnimationFrame(() => {
+      endScreen.style.opacity = '1';
+    });
+  }
+};
+
+// --- Intercepta o update do diretor sem travar o jogo ---
+// substitute originalUpdate wrapper so we can pass the player object to checkRaceEnd
+const originalUpdate = Director.prototype.update;
+Director.prototype.update = function(player, opponent) {
+  if (!this.ended) {
+    originalUpdate.call(this, player, opponent);
+    // passa o objeto player para a checagem para identificação correta
+    this.checkRaceEnd(player);
+  }
+};
+

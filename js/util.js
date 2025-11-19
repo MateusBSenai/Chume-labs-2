@@ -100,7 +100,7 @@ const tracks = {
   brasil: {
     trackName: 'Interlagos',
     trackSize: 8632,
-    laps: 5,
+    laps: 2,
     colors: {
       lightRoad: '#424142',
       darkRoad: '#393839',
